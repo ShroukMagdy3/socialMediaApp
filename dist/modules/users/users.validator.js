@@ -8,12 +8,16 @@ const zod_1 = __importDefault(require("zod"));
 exports.signUpSchema = {
     body: zod_1.default
         .object({
-        name: zod_1.default.string().min(2).max(10),
+        userName: zod_1.default.string().min(2).max(10),
         password: zod_1.default
             .string()
             .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
         email: zod_1.default.string().email(),
         cPassword: zod_1.default.string(),
+        age: zod_1.default.number(),
+        address: zod_1.default.string(),
+        phone: zod_1.default.string(),
+        gender: zod_1.default.string()
     })
         .required()
         .superRefine((data, context) => {

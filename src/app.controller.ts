@@ -7,6 +7,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { AppError } from "./utilities/classError";
 import userRouter from "./modules/users/users.controller";
+import { connectionDB } from "./DB/connectionDB";
 const app: express.Application = express();
 const port: string | number = process.env.PORT || 5000;
 const limiter = rateLimit({
@@ -20,7 +21,7 @@ const limiter = rateLimit({
 });
 
 
-const bootstrap = () => {
+const bootstrap = async() => {
   app.use(express.json());
   app.use(helmet());
   app.use(cors());
@@ -29,6 +30,7 @@ const bootstrap = () => {
   app.get("/", (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json({ message: "welcome to my socialApp" });
   });
+  await connectionDB();
   app.use("{/*demo}", (req: Request, res: Response, next: NextFunction) => {
    throw new AppError(`Invalid URL ${req.originalUrl}` , 404);
   });

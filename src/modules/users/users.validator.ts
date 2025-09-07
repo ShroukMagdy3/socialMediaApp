@@ -2,7 +2,7 @@ import z from "zod";
 export const signUpSchema = {
   body: z
     .object({
-      name: z.string().min(2).max(10),
+      userName: z.string().min(2).max(10),
       password: z
         .string()
         .regex(
@@ -10,6 +10,10 @@ export const signUpSchema = {
         ),
       email: z.string().email(),
       cPassword: z.string(),
+      age:z.number(),
+      address:z.string(),
+      phone:z.string(),
+      gender:z.string()
     })
     .required()
     .superRefine((data, context) => {
@@ -21,3 +25,5 @@ export const signUpSchema = {
       }
     }),
 };
+
+export type signUpSchemaType = z.infer< typeof signUpSchema.body>
