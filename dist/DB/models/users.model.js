@@ -24,7 +24,10 @@ const userSchema = new mongoose_1.default.Schema({
         enum: genderType,
         required: true,
     },
+    confirmed: { type: Boolean, default: false
+    },
     password: { type: String, required: true },
+    otp: { type: String },
     phone: { type: String, required: true },
     address: { type: String, required: true },
     age: { type: Number, min: 18, max: 60, required: true },

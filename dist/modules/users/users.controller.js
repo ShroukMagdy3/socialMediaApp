@@ -9,5 +9,6 @@ const validation_1 = require("../../middleware/validation");
 const users_validator_1 = require("./users.validator");
 const userRouter = (0, express_1.Router)();
 userRouter.post("/signUp", (0, validation_1.validation)(users_validator_1.signUpSchema), users_service_1.default.signUp);
-userRouter.post("/signIn", users_service_1.default.signIn);
+userRouter.patch("/confirmEmail", (0, validation_1.validation)(users_validator_1.confirmEmailSchema), users_service_1.default.confirmEmail);
+userRouter.post("/signIn", (0, validation_1.validation)(users_validator_1.signInSchema), users_service_1.default.signIn);
 exports.default = userRouter;

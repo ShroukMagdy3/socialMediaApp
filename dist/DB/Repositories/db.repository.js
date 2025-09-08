@@ -12,5 +12,8 @@ class DbRepository {
     async findOne(filter, select) {
         return this.model.findOne(filter);
     }
+    async updateOne(filter, update) {
+        return this.model.updateOne(filter, update);
+    }
 }
 exports.DbRepository = DbRepository;

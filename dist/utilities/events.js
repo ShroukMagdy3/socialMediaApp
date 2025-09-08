@@ -6,8 +6,7 @@ const sendEmail_1 = require("../service/sendEmail");
 const email_template_1 = require("../service/email.template");
 exports.eventEmitter = new events_1.EventEmitter();
 exports.eventEmitter.on("confirmEmail", async (data) => {
-    const { email } = data;
-    const otp = await (0, sendEmail_1.generateOtp)();
+    const { email, otp } = data;
     await (0, sendEmail_1.sendEmail)({
         to: email,
         subject: `Confirm Email`,

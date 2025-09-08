@@ -5,8 +5,7 @@ import { emailTemplate } from "../service/email.template";
 export const eventEmitter = new EventEmitter();
 
 eventEmitter.on("confirmEmail", async (data) => {
-  const { email } = data;
-  const otp = await generateOtp();
+  const { email , otp } = data;
   await sendEmail({
     to: email,
     subject: `Confirm Email`,

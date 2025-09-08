@@ -11,6 +11,9 @@ export interface IUser {
   age: number;
   phone?: string;
   address: string;
+  otp?:string
+  changeCredentials:Date
+  confirmed?:string
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -33,7 +36,10 @@ const userSchema = new mongoose.Schema<IUser>(
       enum: genderType,
       required: true,
     },
+    confirmed:{type:Boolean, default:false
+     },
     password: { type: String, required: true },
+    otp:{type:String },
     phone: { type: String, required: true },
     address: { type: String, required: true },
     age: { type: Number, min: 18, max: 60, required: true },
