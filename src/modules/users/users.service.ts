@@ -2,21 +2,26 @@ import { NextFunction, Request, Response } from "express";
 import {
   confirmEmailSchema,
   confirmEmailSchemaType,
+  flagType,
+  LogOutSchemaType,
   signInSchemaType,
   signUpSchemaType,
 } from "./users.validator";
-import { DbRepository } from "../../DB/Repositories/db.repository";
-import userModel, { IUser } from "../../DB/models/users.model";
-import { HydratedDocument } from "mongoose";
+import userModel, { roleType } from "../../DB/models/users.model";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { AppError } from "../../utilities/classError";
 import { Compare, Hash } from "../../utilities/hash";
-import { generateOtp, sendEmail } from "../../service/sendEmail";
-import { emailTemplate } from "../../service/email.template";
+import { generateOtp } from "../../service/sendEmail";
 import { eventEmitter } from "../../utilities/events";
+import { generateToken } from "../../utilities/token";
+import { v4 as uuidv4 } from "uuid";
+import revokeTokenModel from "../../DB/models/revokeToken.model";
+import { revokeTokenRepository } from "../../DB/Repositories/revokeToken.repository";
 
 class UserService {
   private _userModel = new UserRepository(userModel);
+  private _revokeTokenModel = new revokeTokenRepository(revokeTokenModel);
+
   signUp = async (req: Request, res: Response, next: NextFunction) => {
     const {
       userName,
@@ -59,7 +64,6 @@ class UserService {
     if (!user) {
       throw new AppError("email not exist or confirmed !");
     }
-    console.log(otp, user.otp);
     if (!(await Compare(otp, user?.otp!))) {
       throw new AppError("Invalid otp");
     }
@@ -70,12 +74,98 @@ class UserService {
     return res.status(200).json({ message: "Confirmed" });
   };
 
+  signIn = async (req: Request, res: Response, next: NextFunction) => {
+    const { email, password }: signInSchemaType = req.body;
+    const user = await this._userModel.findOne({ email });
+    if (!user) {
+      throw new AppError("this user not found ", 404);
+    }
+    if (!user.confirmed) {
+  throw new AppError("this user is not confirmed", 403);
+}
+    if (!(await Compare(password, user.password))) {
+      throw new AppError("invalid Password", 400);
+    }
+    const jwtId = uuidv4();
+    const accessToken = await generateToken({
+      payload: { id: user._id, email },
+      signature:
+        user.role == roleType.user
+          ? process.env.SIGNATURE_access_USER!
+          : process.env.SIGNATURE_access_ADMIN!,
+      options: {
+        expiresIn: 60 * 60,
+        jwtid: jwtId,
+      },
+    });
+    const refresh_token = await generateToken({
+      payload: { id: user._id, email },
+      signature:
+        user.role == roleType.admin
+          ? process.env.SIGNATURE_REFRESH_ADMIN!
+          : process.env.SIGNATURE_REFRESH_USER!,
+      options: { expiresIn: "1y", jwtid: jwtId },
+    });
 
-  signIn = (req: Request, res: Response, next: NextFunction) => {
-    const { email, password } :signInSchemaType = req.body;
+    return res
+      .status(200)
+      .json({ message: "success", accessToken, refresh_token });
+  };
 
-    
-    return res.status(200).json({ message: "success" });
+  getProfile = async (req: Request, res: Response, next: NextFunction) => {
+    return res.status(200).json({ message: "success", user: req.user });
+  };
+  LogOut = async (req: Request, res: Response, next: NextFunction) => {
+    const { flag }: LogOutSchemaType = req.body;
+    if (flag === flagType.all) {
+      await this._userModel.updateOne(
+        { _id: req.user._id },
+        { changeCredentials: new Date() }
+      );
+      return res
+        .status(200)
+        .json({ message: "you are log out from all devices" });
+    }
+
+    await this._revokeTokenModel.create({
+      tokenId: req.decoded.jti!,
+      userId: req.user._id,
+      expAt: new Date(req.decoded.exp! * 1000),
+    });
+    return res
+      .status(200)
+      .json({ message: "you are log out from this device only" });
+  };
+  refreshToken= async (req: Request, res: Response, next: NextFunction) => {
+const jwtId = uuidv4();
+    const accessToken = await generateToken({
+      payload: { id: req?.user?._id,email : req?.user?.email },
+      signature:
+        req.user.role == roleType.user
+          ? process.env.SIGNATURE_access_USER!
+          : process.env.SIGNATURE_access_ADMIN!,
+      options: {
+        expiresIn: 60 * 60,
+        jwtid: jwtId,
+      },
+    });
+    const refresh_token = await generateToken({
+      payload: { id: req?.user?._id,email: req?.user?.email },
+      signature:
+        req?.user?.role == roleType.admin
+          ? process.env.SIGNATURE_REFRESH_ADMIN!
+          : process.env.SIGNATURE_REFRESH_USER!,
+      options: { expiresIn: "1y", jwtid: jwtId },
+    });
+
+    await this._revokeTokenModel.create({
+      tokenId:req.decoded.jti!,
+      userId:req.user._id!,
+      expAt:new Date (req?.decoded?.exp! * 1000)
+    })
+
+
+    return res.status(200).json({ message: "success", accessToken , refresh_token });
   };
 }
 

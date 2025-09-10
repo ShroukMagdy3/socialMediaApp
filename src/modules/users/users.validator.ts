@@ -1,5 +1,9 @@
 import z from "zod";
 
+export enum flagType {
+  all="all",
+  current = "current"
+}
 
 export const signInSchema = {
   body: z
@@ -47,7 +51,13 @@ export const confirmEmailSchema = {
     })
     .required(),
 };
+export const LogOutSchema = {
+  body:z.strictObject({
+    flag:z.enum([flagType.all, flagType.current])
+  }).required()
+}
 
 export type signUpSchemaType = z.infer<typeof signUpSchema.body>;
 export type signInSchemaType = z.infer<typeof signInSchema.body>;
 export type confirmEmailSchemaType = z.infer<typeof confirmEmailSchema.body>;
+export type LogOutSchemaType = z.infer<typeof LogOutSchema.body>;
