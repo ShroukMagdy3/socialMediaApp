@@ -1,13 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import {
-  confirmEmailSchema,
   confirmEmailSchemaType,
   flagType,
+  forgetPassSchemaType,
+  loginWithGmailSchemaType,
   LogOutSchemaType,
+  resetPassSchemaType,
   signInSchemaType,
   signUpSchemaType,
 } from "./users.validator";
-import userModel, { roleType } from "../../DB/models/users.model";
+import userModel, { providerType, roleType } from "../../DB/models/users.model";
 import { UserRepository } from "../../DB/Repositories/user.repository";
 import { AppError } from "../../utilities/classError";
 import { Compare, Hash } from "../../utilities/hash";
@@ -17,6 +19,8 @@ import { generateToken } from "../../utilities/token";
 import { v4 as uuidv4 } from "uuid";
 import revokeTokenModel from "../../DB/models/revokeToken.model";
 import { revokeTokenRepository } from "../../DB/Repositories/revokeToken.repository";
+import { OAuth2Client, TokenPayload } from "google-auth-library";
+import { compare } from "bcrypt";
 
 class UserService {
   private _userModel = new UserRepository(userModel);
@@ -76,7 +80,7 @@ class UserService {
 
   signIn = async (req: Request, res: Response, next: NextFunction) => {
     const { email, password }: signInSchemaType = req.body;
-    const user = await this._userModel.findOne({ email });
+    const user = await this._userModel.findOne({ email , provider:providerType.system });
     if (!user) {
       throw new AppError("this user not found ", 404);
     }
@@ -167,6 +171,104 @@ const jwtId = uuidv4();
 
     return res.status(200).json({ message: "success", accessToken , refresh_token });
   };
+  loginWithGmail=  async (req: Request, res: Response, next: NextFunction) => {
+  const { idToken } :loginWithGmailSchemaType = req.body;
+  const client = new OAuth2Client();
+  async function verify() {
+    const ticket = await client.verifyIdToken({
+      idToken: idToken,
+      audience: process.env.GOOGLE_CLIENT_ID!,
+    });
+    const payLoad = ticket.getPayload();
+    
+    console.log(process.env.GOOGLE_CLIENT_ID);
+    
+    return payLoad
+  }
+
+  const { email, email_verified, name, picture } = await verify() as TokenPayload;
+  
+  let user = await this._userModel.findOne({ email });
+  if(user?.provider == providerType.system){
+    throw new AppError(" you must signUp first");
+  }
+  if (!user) {
+    user = await this._userModel.create({
+      email : email !,
+      userName:name! ,
+      confirmed: email_verified!,
+      image: picture!,
+      provider: providerType.google!,
+      password: uuidv4()!,
+    });
+
+}
+ const jwtId = uuidv4();
+    const accessToken = await generateToken({
+      payload: { id: user._id, email },
+      signature:
+        user.role == roleType.user
+          ? process.env.SIGNATURE_access_USER!
+          : process.env.SIGNATURE_access_ADMIN!,
+      options: {
+        expiresIn: 60 * 60,
+        jwtid: jwtId,
+      },
+    });
+    const refresh_token = await generateToken({
+      payload: { id: user._id, email },
+      signature:
+        user.role == roleType.admin
+          ? process.env.SIGNATURE_REFRESH_ADMIN!
+          : process.env.SIGNATURE_REFRESH_USER!,
+      options: { expiresIn: "1y", jwtid: jwtId },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "success", accessToken, refresh_token });
+  }
+  forgetPass =async (req: Request, res: Response, next: NextFunction) => {
+  
+  const {email}:forgetPassSchemaType = req.body;
+  const user = await this._userModel.findOne({
+    email
+  })
+  if(!user) {
+    throw new AppError("this user not exist or not confirmed yet " , 404);
+  }
+  const otp = await generateOtp();
+  const hashOtp = await Hash( String(otp) );
+  eventEmitter.emit("forgetPass" , {email, otp});
+  await this._userModel.updateOne({email:user?.email } ,{otp:hashOtp})
+
+return res.status(200).json({message:"success sent otp"})
+  }
+  resetPass =async (req: Request, res: Response, next: NextFunction) => {
+  
+  const {email  ,otp, password , cPassword}:resetPassSchemaType = req.body;
+  const user = await this._userModel.findOne({
+    email
+  })
+  if(!user) {
+    throw new AppError("this user not exist or not confirmed yet " , 404);
+  }
+  if(!await Compare (otp , user?.otp! )){
+    throw new AppError("wrong otp");
+  }
+  const hashPass =await Hash(password);
+  await this._userModel.updateOne({email :email } ,{
+    password:hashPass ,
+      $unset: {opt : ""}
+  })
+
+return res.status(200).json({message:"success "})
+  }
+
+
+
+
+
 }
 
 export default new UserService();

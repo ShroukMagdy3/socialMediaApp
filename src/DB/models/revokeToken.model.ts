@@ -18,4 +18,4 @@ const revokeTokenSchema = new mongoose.Schema<IRevokeToken>(
 
 const revokeTokenModel =
   mongoose.models.RevokeToken || mongoose.model<IRevokeToken>("RevokeToken", revokeTokenSchema);
-  export default revokeTokenModel;
+  export default revokeTokenModel

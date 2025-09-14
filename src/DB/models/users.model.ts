@@ -11,9 +11,11 @@ export interface IUser {
   age: number;
   phone?: string;
   address: string;
+  image?:string
   otp?:string
   changeCredentials:Date
-  confirmed?:string
+  provider?:providerType
+  confirmed?:boolean
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -21,9 +23,14 @@ export enum genderType {
   male = "male",
   female = "female",
 }
+
 export enum roleType {
   user = "user",
   admin = "admin",
+}
+export enum providerType{
+  system= "system", 
+  google="google"
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -36,13 +43,21 @@ const userSchema = new mongoose.Schema<IUser>(
       enum: genderType,
       required: true,
     },
+    image:{type:String} ,
     confirmed:{type:Boolean, default:false
      },
-    password: { type: String, required: true },
+     provider:{type :String , enum:providerType ,default:providerType.system},
+    password: { type: String, required: function (){
+     return this.provider === providerType.system ? true : false ;
+    }
+   },
     otp:{type:String },
     phone: { type: String, required: true },
     address: { type: String, required: true },
-    age: { type: Number, min: 18, max: 60, required: true },
+    age: { type: Number, min: 18, max: 60, required: function(){
+      return this.provider === providerType.system ? true :false ; 
+    }
+   },
     role: { type: String, enum: roleType, default: roleType.user },
   },
   {

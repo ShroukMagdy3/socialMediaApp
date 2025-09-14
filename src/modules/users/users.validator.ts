@@ -1,4 +1,4 @@
-import z from "zod";
+import z, { email } from "zod";
 
 export enum flagType {
   all="all",
@@ -56,8 +56,37 @@ export const LogOutSchema = {
     flag:z.enum([flagType.all, flagType.current])
   }).required()
 }
+export const loginWithGmailSchema={
+  body:z.strictObject({
+    idToken :z.string()
+  }).required()
+}
 
+export const forgetPassSchema ={
+  body :z.strictObject ({
+   
+      email:z.string()
+  }).required()
+}
+export const resetPassSchema={
+  body :forgetPassSchema.body.extend({
+    password :z.string().regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+    cPassword :z.string(),
+    otp:z.string().regex(/^\d{6}$/),
+  }).required().superRefine((data, context) => {
+      if (data.password !== data.cPassword) {
+        context.addIssue({
+          code: "custom",
+          path: ["cPassword"],
+        });
+      }
+    }),
+  
+}
 export type signUpSchemaType = z.infer<typeof signUpSchema.body>;
 export type signInSchemaType = z.infer<typeof signInSchema.body>;
 export type confirmEmailSchemaType = z.infer<typeof confirmEmailSchema.body>;
 export type LogOutSchemaType = z.infer<typeof LogOutSchema.body>;
+export type loginWithGmailSchemaType = z.infer<typeof loginWithGmailSchema.body>;
+export type forgetPassSchemaType = z.infer<typeof forgetPassSchema.body>;
+export type resetPassSchemaType = z.infer<typeof resetPassSchema.body>;
