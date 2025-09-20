@@ -83,6 +83,37 @@ export const resetPassSchema={
     }),
   
 }
+export const updatePasswordSchema ={
+  body :z.strictObject({
+    oldPassword:z.string().regex( /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+    newPassword:z.string().regex( /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+  }).required()
+}
+
+export const updateInfoSchema ={
+  body :z.strictObject({
+    userName:z.string().optional(),
+    age:z.number().optional(),
+    address:z.string().optional(),
+    phone:z.string().optional(),
+  })
+}
+export const confirmEnable2FASchema ={
+ body :z.strictObject({
+    otp:z.string()
+  }).required()
+}
+export const confirmLoginSchema ={
+ body :z.strictObject({
+    otp:z.string(),
+    email:z.email()
+  }).required()
+}
+
+export const updateEmailSchema ={
+  body:forgetPassSchema.body.extend({
+  }).required()
+}
 export type signUpSchemaType = z.infer<typeof signUpSchema.body>;
 export type signInSchemaType = z.infer<typeof signInSchema.body>;
 export type confirmEmailSchemaType = z.infer<typeof confirmEmailSchema.body>;
@@ -90,3 +121,8 @@ export type LogOutSchemaType = z.infer<typeof LogOutSchema.body>;
 export type loginWithGmailSchemaType = z.infer<typeof loginWithGmailSchema.body>;
 export type forgetPassSchemaType = z.infer<typeof forgetPassSchema.body>;
 export type resetPassSchemaType = z.infer<typeof resetPassSchema.body>;
+export type updatePasswordSchemaType = z.infer<typeof updatePasswordSchema.body>;
+export type updateInfoSchemaType = z.infer<typeof updateInfoSchema.body>;
+export type updateEmailSchemaType = z.infer<typeof updateEmailSchema.body>;
+export type confirmLoginType = z.infer<typeof confirmLoginSchema.body>;
+export type confirmEnable2FASchemaType = z.infer<typeof confirmEnable2FASchema.body>;

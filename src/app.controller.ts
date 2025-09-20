@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import { AppError } from "./utilities/classError";
 import userRouter from "./modules/users/users.controller";
 import { connectionDB } from "./DB/connectionDB";
+import postRouter from "./modules/Posts/posts.controller";
 const app: express.Application = express();
 const port: string | number = process.env.PORT || 5000;
 const limiter = rateLimit({
@@ -27,6 +28,7 @@ const bootstrap = async() => {
   app.use(cors());
   app.use(limiter);
   app.use("/api/user" ,userRouter);
+  app.use("/api/post" , postRouter);
   app.get("/", (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json({ message: "welcome to my socialApp" });
   });

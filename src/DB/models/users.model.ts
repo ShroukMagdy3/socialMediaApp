@@ -1,28 +1,35 @@
 import mongoose from "mongoose";
+import { Hash } from "../../utilities/hash";
 
 export interface IUser {
   fName: string;
   lName: string;
-  userName?: string;
+  userName?: string | undefined;
   gender: string;
-  role?: string;
+  role?: string | undefined;
   password: string;
   email: string;
   age: number;
-  phone?: string;
+  phone?: string | undefined;
   address: string;
-  image?:string
-  otp?:string
+  image?:string | undefined
+  otp?:string | undefined
   changeCredentials:Date
-  provider?:providerType
-  confirmed?:boolean
-  createdAt?: Date;
-  updatedAt?: Date;
+  provider?:providerType | undefined
+  confirmed?:boolean | undefined
+  isTwoFAEnabled: boolean;
+  verify_otp?: string |undefined;
+  verify_otp_expire?: Date |undefined;
+  login_otp?: string |undefined;
+  login_otp_expire?: Date |undefined;
+  createdAt?: Date | undefined;
+  updatedAt?: Date | undefined;
 }
 export enum genderType {
   male = "male",
   female = "female",
 }
+
 
 export enum roleType {
   user = "user",
@@ -59,6 +66,11 @@ const userSchema = new mongoose.Schema<IUser>(
     }
    },
     role: { type: String, enum: roleType, default: roleType.user },
+    isTwoFAEnabled: { type: Boolean, default: false },
+    verify_otp: String,
+    verify_otp_expire: Date,
+    login_otp: String,
+    login_otp_expire: Date,
   },
   {
     timestamps: true,
@@ -80,6 +92,16 @@ userSchema
   .get(function () {
     return this.fName + " " + this.lName;
   });
+
+
+
+  userSchema.pre ("save" , async function (next){
+    if(!this.isModified("password")){
+      return next();
+    }
+    this.password = await Hash(this.password);
+     next();
+  })
 
 const userModel =
   mongoose.models.User || mongoose.model<IUser>("User", userSchema);

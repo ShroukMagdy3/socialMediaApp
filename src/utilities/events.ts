@@ -21,3 +21,11 @@ eventEmitter.on("forgetPass", async (data) => {
     html: emailTemplate(otp as unknown as string, `forget password`),
   });
 });
+ eventEmitter.on("verifyEmail", async (data) => {
+  const { email , otp } = data;
+  await sendEmail({
+    to: email,
+    subject: `verify email `,
+    html: emailTemplate(otp as unknown as string, `verify Email`),
+  });
+})
