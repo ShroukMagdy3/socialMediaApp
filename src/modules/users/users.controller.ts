@@ -4,6 +4,7 @@ import { validation } from "../../middleware/validation";
 import { confirmEmailSchema, confirmEnable2FASchema, confirmLoginSchema, forgetPassSchema, loginWithGmailSchema, LogOutSchema, resetPassSchema, signInSchema, signUpSchema, updateEmailSchema, updateInfoSchema, updatePasswordSchema } from "./users.validator";
 import { Authentication } from "../../middleware/authentication";
 import { TokenType } from "../../utilities/token";
+import { MulterCloud, validationFileType } from "../../middleware/multer.cloud";
 const userRouter = Router()
 
 userRouter.post("/signUp", validation(signUpSchema) , US.signUp )
@@ -26,6 +27,11 @@ userRouter.patch("/updateEmail",Authentication() , validation(updateEmailSchema)
 userRouter.post("/enable-2fa",Authentication() ,US.enable2FA);
 userRouter.post("/confirmEnable2FA" ,Authentication() ,validation(confirmEnable2FASchema), US.confirmEnable2FA);
 userRouter.post("/confirmLogin" ,validation(confirmLoginSchema), US.confirmLogin);
+
+
+userRouter.post("/upload" ,MulterCloud({fileTypes:validationFileType.image}).array("files")  ,Authentication() , US.upload);
+
+
 
 
 
