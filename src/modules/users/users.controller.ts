@@ -29,7 +29,7 @@ userRouter.post("/confirmEnable2FA" ,Authentication() ,validation(confirmEnable2
 userRouter.post("/confirmLogin" ,validation(confirmLoginSchema), US.confirmLogin);
 
 
-userRouter.post("/upload" ,MulterCloud({fileTypes:validationFileType.image}).array("files")  ,Authentication() , US.upload);
+userRouter.post("/upload" ,Authentication() , US.uploadProfileImage);
 
 
 

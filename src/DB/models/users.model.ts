@@ -24,6 +24,8 @@ export interface IUser {
   login_otp_expire?: Date |undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
+  profileImage?:string
+  tempProfileImage?:string
 }
 export enum genderType {
   male = "male",
@@ -71,6 +73,9 @@ const userSchema = new mongoose.Schema<IUser>(
     verify_otp_expire: Date,
     login_otp: String,
     login_otp_expire: Date,
+    profileImage:{type:String },
+    tempProfileImage:{type:String },
+
   },
   {
     timestamps: true,

@@ -25,7 +25,7 @@ import revokeTokenModel from "../../DB/models/revokeToken.model";
 import { revokeTokenRepository } from "../../DB/Repositories/revokeToken.repository";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { Compare, Hash } from "../../utilities/hash";
-import { getFile, uploadFiles, uploadWithSignedUrl } from "../../utilities/s3.config";
+import {  uploadWithSignedUrl } from "../../utilities/s3.config";
 
 class UserService {
   private _userModel = new UserRepository(userModel);
@@ -405,19 +405,25 @@ class UserService {
     return res.status(200).json({ message: "Updated Successfully" });
   };
 
-  upload = async (req: Request, res: Response, next: NextFunction) => {
-    const key = await uploadFiles({
-      files:req?.files  as Express.Multer.File[] ,
-      path:`users/${req.user._id}/coverImages`,
-    })
-
-    // const { originalName, ContentType } = req.body;
-    // const url = await uploadWithSignedUrl({
-    //   originalName: originalName,
-    //   ContentType: ContentType,
-    //   path: `users/${req.user._id}`,
-    // });
-    return res.status(200).json({ message: "uploaded success" });
+  uploadProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+    const { originalName, ContentType } = req.body;
+    const {url , Key}  = await uploadWithSignedUrl({
+      originalName,
+      ContentType,
+      path: `users/${req.user._id}`,
+    });
+    const user= await this._userModel.findOneAndUpdate({
+      _id:req.user._id
+    } ,
+  {
+    profileImage:Key,
+    tempProfileImage:req.user.profileImage
+  })
+  if(!user){
+    throw new AppError("this user not found" , 404);
+  }
+    eventEmitter.emit("uploadProfile" , {userId:req.user._id ,oldKey:req.user.profileImage , Key , expiresIn:60 })
+    return res.status(200).json({ message: "uploaded success" , url });
   };
 
 

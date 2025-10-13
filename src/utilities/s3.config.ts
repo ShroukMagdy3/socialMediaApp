@@ -128,13 +128,14 @@ export const uploadWithSignedUrl = async ({
   path: string;
   ContentType: string;
 }) => {
+  const Key = `${process.env.APPLICATION_NAME}/${path}/${uuidv4()}/${originalName}`;
   const command = new PutObjectCommand({
     Bucket: process.env.BUCKET_NAME!,
     ContentType,
     Key: `${process.env.APPLICATION_NAME}/${path}/${uuidv4()}/${originalName}`,
   });
-  const url = await getSignedUrl(s3Client(), command, { expiresIn: 60 * 60 }); // in min
-  return url;
+  const url  = await getSignedUrl(s3Client(), command, { expiresIn: 60 * 60 }); // in min
+  return {url , Key} ;
 };
 
 export const getFile = async ({
