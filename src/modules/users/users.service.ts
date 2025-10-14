@@ -1,15 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 
-
 import {
   confirmEmailSchemaType,
   flagType,
   forgetPassSchemaType,
+  freezeSchemaType,
   loginWithGmailSchemaType,
   LogOutSchemaType,
   resetPassSchemaType,
   signInSchemaType,
   signUpSchemaType,
+  unfreezeSchemaType,
   updateEmailSchemaType,
   updateInfoSchemaType,
   updatePasswordSchemaType,
@@ -25,7 +26,7 @@ import revokeTokenModel from "../../DB/models/revokeToken.model";
 import { revokeTokenRepository } from "../../DB/Repositories/revokeToken.repository";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { Compare, Hash } from "../../utilities/hash";
-import {  uploadWithSignedUrl } from "../../utilities/s3.config";
+import { uploadWithSignedUrl } from "../../utilities/s3.config";
 
 class UserService {
   private _userModel = new UserRepository(userModel);
@@ -124,9 +125,11 @@ class UserService {
     const user = await this._userModel.findOne({
       email,
       provider: providerType.system,
+      deletedAt:{$exists:false},
+      deletedBy:{$exists:false}
     });
     if (!user) {
-      throw new AppError("this user not found ", 404);
+      throw new AppError("this user not found or freezed ", 404);
     }
 
     if (!user.confirmed) {
@@ -405,26 +408,80 @@ class UserService {
     return res.status(200).json({ message: "Updated Successfully" });
   };
 
-  uploadProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+  uploadProfileImage = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { originalName, ContentType } = req.body;
-    const {url , Key}  = await uploadWithSignedUrl({
+    const { url, Key } = await uploadWithSignedUrl({
       originalName,
       ContentType,
       path: `users/${req.user._id}`,
     });
-    const user= await this._userModel.findOneAndUpdate({
-      _id:req.user._id
-    } ,
-  {
-    profileImage:Key,
-    tempProfileImage:req.user.profileImage
-  })
-  if(!user){
-    throw new AppError("this user not found" , 404);
-  }
-    eventEmitter.emit("uploadProfile" , {userId:req.user._id ,oldKey:req.user.profileImage , Key , expiresIn:60 })
-    return res.status(200).json({ message: "uploaded success" , url });
+    const user = await this._userModel.findOneAndUpdate(
+      {
+        _id: req.user._id,
+      },
+      {
+        profileImage: Key,
+        tempProfileImage: req.user.profileImage,
+      }
+    );
+    if (!user) {
+      throw new AppError("this user not found", 404);
+    }
+    eventEmitter.emit("uploadProfile", {
+      userId: req.user._id,
+      oldKey: req.user.profileImage,
+      Key,
+      expiresIn: 60,
+    });
+    return res.status(200).json({ message: "uploaded success", url });
   };
+  freezeAccount = async (req: Request, res: Response, next: NextFunction) => {
+    const { userId }: freezeSchemaType = req.params as freezeSchemaType;
+    if (userId && req.user.role !== roleType.admin) {
+      throw new AppError("Unauthorized", 401);
+    }
+    const user = await this._userModel.findOneAndUpdate(
+      { _id: userId  || req.user._id , deletedBy:{ $exists:false } , deletedAt:{ $exists:false } },
+      {
+        deletedBy: req.user._id,
+        changeCredentials: Date.now(),
+        deletedAt: Date.now(),
+      }
+    );
+    if (!user) {
+      throw new AppError("user Not found or already freezed", 404);
+    }
+    return res.status(200).json({ message: "Freezed" });
+  };
+
+  unfreezeAccount = async (req: Request, res: Response, next: NextFunction) => {
+    const { userId }:unfreezeSchemaType = req.params as unfreezeSchemaType;
+    if (req.user.role !== roleType.admin) {
+      throw new AppError("Unauthorized", 401);
+    }
+    const user = await this._userModel.findOneAndUpdate(
+      { _id: userId , deletedAt: { $exists: true }, deletedBy:req.user._id },
+      {
+        $unset: { deletedBy: "", deletedAt: "" },
+        restoreBy: req.user._id,
+        restoreAt: Date.now(),
+      }
+    );
+    if (!user) {
+      throw new AppError("user Not found or already unfreeze", 404);
+    }
+    return res.status(200).json({ message: "UnFreezed" });
+  };
+
+  
+
+
+
+
 
 
 }

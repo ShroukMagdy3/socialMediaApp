@@ -1,10 +1,11 @@
 import { Router } from "express";
 import US from './users.service'
 import { validation } from "../../middleware/validation";
-import { confirmEmailSchema, confirmEnable2FASchema, confirmLoginSchema, forgetPassSchema, loginWithGmailSchema, LogOutSchema, resetPassSchema, signInSchema, signUpSchema, updateEmailSchema, updateInfoSchema, updatePasswordSchema } from "./users.validator";
+import { confirmEmailSchema, confirmEnable2FASchema, confirmLoginSchema, forgetPassSchema, freezeSchema, loginWithGmailSchema, LogOutSchema, resetPassSchema, signInSchema, signUpSchema, unfreezeSchema, updateEmailSchema, updateInfoSchema, updatePasswordSchema } from "./users.validator";
 import { Authentication } from "../../middleware/authentication";
 import { TokenType } from "../../utilities/token";
-import { MulterCloud, validationFileType } from "../../middleware/multer.cloud";
+import { Authorization } from "../../middleware/authorization";
+import { roleType } from "../../DB/models/users.model";
 const userRouter = Router()
 
 userRouter.post("/signUp", validation(signUpSchema) , US.signUp )
@@ -30,6 +31,8 @@ userRouter.post("/confirmLogin" ,validation(confirmLoginSchema), US.confirmLogin
 
 
 userRouter.post("/upload" ,Authentication() , US.uploadProfileImage);
+userRouter.delete("/freezeAccount{/:userId}", Authentication() , validation(freezeSchema) , US.freezeAccount )
+userRouter.delete("/unFreezeAccount/:userId", Authentication() , Authorization(roleType.admin) , validation(unfreezeSchema) , US.unfreezeAccount )
 
 
 

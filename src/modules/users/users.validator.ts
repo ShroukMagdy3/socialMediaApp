@@ -1,3 +1,5 @@
+import { Type } from "@aws-sdk/client-s3";
+import { Types } from "mongoose";
 import z, { email } from "zod";
 
 export enum flagType {
@@ -114,6 +116,33 @@ export const updateEmailSchema ={
   body:forgetPassSchema.body.extend({
   }).required()
 }
+
+export const freezeSchema ={
+  params:z.strictObject({
+    userId:z.string().optional()
+  }).refine((value) =>{
+    return value.userId ? Types.ObjectId.isValid(value.userId) :true
+  },{
+    message:"user ID is required",
+    path: ["userId"]
+  })
+}
+export const unfreezeSchema ={
+  params:z.strictObject({
+    userId:z.string()
+  }).required().refine((value) =>{
+    return value.userId ? Types.ObjectId.isValid(value.userId) :true
+  },{
+    message:"user ID is required",
+    path: ["userId"]
+  })
+}
+
+
+
+
+
+
 export type signUpSchemaType = z.infer<typeof signUpSchema.body>;
 export type signInSchemaType = z.infer<typeof signInSchema.body>;
 export type confirmEmailSchemaType = z.infer<typeof confirmEmailSchema.body>;
@@ -126,3 +155,5 @@ export type updateInfoSchemaType = z.infer<typeof updateInfoSchema.body>;
 export type updateEmailSchemaType = z.infer<typeof updateEmailSchema.body>;
 export type confirmLoginType = z.infer<typeof confirmLoginSchema.body>;
 export type confirmEnable2FASchemaType = z.infer<typeof confirmEnable2FASchema.body>;
+export type freezeSchemaType = z.infer<typeof freezeSchema.params>;
+export type unfreezeSchemaType = z.infer<typeof unfreezeSchema.params>;

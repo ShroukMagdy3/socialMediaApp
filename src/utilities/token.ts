@@ -70,12 +70,15 @@ export const decodedTokenAndFetch = async (
   if (!user) {
     throw new AppError("user not exist", 404);
   }
+  if(!user.confirmed){
+    throw new AppError("please confirm email");
+  }
   
   if (await _revokeTokenModel.findOne({ tokenId: decoded.jti })) {
     throw new AppError("token has been revoked", 401);
   }
   if(user?.changeCredentials?.getTime()! > decoded.iat! * 1000){
-    throw new AppError("token has been revoked", 401);
+    throw new AppError("token has been revoked , credentials has been changed  ", 401);
   }
   
   return { decoded, user };
