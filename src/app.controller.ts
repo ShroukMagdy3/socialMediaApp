@@ -16,6 +16,7 @@ import { connectionDB } from "./DB/connectionDB";
 import { deleteFile, deleteFiles, getFile, getPreSignedURL, listFiles } from "./utilities/s3.config";
 import { getSignature } from "./utilities/token";
 import { createReadStream } from "fs";
+import postRouter from "./modules/posts/posts.controller";
 const app: express.Application = express();
 const port: string | number = process.env.PORT || 5000;
 const limiter = rateLimit({
@@ -35,6 +36,7 @@ const bootstrap = async() => {
   app.use(cors());
   app.use(limiter);
   app.use("/api/user" ,userRouter);
+  app.use("/api/post" ,postRouter);
 
 
 

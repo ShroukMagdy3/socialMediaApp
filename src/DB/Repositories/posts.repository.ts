@@ -18,7 +18,6 @@ export class PostRepository extends DbRepository<IPost>{
     }
     async findAll ():Promise<HydratedDocument<IPost>[]>{
         return await this.model.find() 
-         
 
     }
 }

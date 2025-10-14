@@ -1,68 +1,67 @@
-// import mongoose, { Schema, Types } from "mongoose";
-
-// export enum allowCommentEnum {
-//    allow ="allow" , 
-//    deny ="deny"
-// }
-// export enum availabilityEnum {
-//    private ="private" , 
-//    friends ="friends",
-//    public ="public"
-// }
-// export interface IPost {
-//      _id?: Types.ObjectId;
-
-//     postId?:Types.ObjectId
-//     userId:Types.ObjectId
-//     content?:String
-//     attachments:String[]
-//     createdAt?:Date
-//     updatedAt?:Date
-//     createdBy:Types.ObjectId,
-//     likes?:Types.ObjectId[]
-//     tags?:Types.ObjectId[]
-//     restoreAt:Date,
-//     assetFolderId: String
-//     allowComment:String
-//     availability:String
-//     deletedAt:Date
-//     deletedBy:Schema.Types.ObjectId
-//     restoreBy:Schema.Types.ObjectId
-// }
+import mongoose, { mongo } from "mongoose"
 
 
+export enum AvailabilityEnum  {
+    friends ="friends",
+    private = "private",
+    public = "public"
+}
+export enum AllowCommentEnum  {
+    deny ="deny",
+    available = "available",
+}
+export interface IPost {
 
-//  const PostSchema = new Schema<IPost>({
-//     userId:{type:Schema.Types.ObjectId  , ref:"User" , required:true},
+    content?:string ,
+    attachments?:string[]
+    assetFolderId?:string,
+    createdBy:mongoose.Schema.Types.ObjectId
 
-//     content :{type:String ,minlength:5 , maxLength:10000, required:true},
-//     attachments:[String],
-//     assetFolderId :String,
-//     createdBy:{type:Schema.Types.ObjectId , ref:'User' , required:true},
+    tags?:mongoose.Schema.Types.ObjectId
+    likes?:mongoose.Schema.Types.ObjectId
+    
+    allowComment:AllowCommentEnum
+    availability:AvailabilityEnum
 
-//     tags :[{type :mongoose.Schema.Types.ObjectId , ref:"User"}],
-//     likes:[{type :mongoose.Schema.Types.ObjectId , ref:"User"}],
+    deletedAt:Date
+    deletedBy:mongoose.Schema.Types.ObjectId
 
-//     allowComment:{type:String, default:allowCommentEnum.allow},
-//     availability:{
-//       type:availabilityEnum , default:availabilityEnum.public
-//     },
-//     deletedAt:{type:Date} ,
-//     deletedBy :{type:Schema.Types.ObjectId, ref:'User'},
-//     restoreAt:{type:Date},
-//     restoreBy:{type:Schema.Types.ObjectId , ref:'User'},
+    restoreAt:Date
+    restoreBy:mongoose.Schema.Types.ObjectId
 
-
-//  }, {
-//     timestamps:true,
-//     toJSON:{
-//       virtuals:true,
-//     },
-//     toObject:{
-//       virtuals:true
-//     }
-//  }) 
+}
 
 
-//  export const PostModel = mongoose.models.Post || mongoose.model( "Post" , PostSchema ) ;
+export const postSchema = new mongoose.Schema<IPost>({
+ content:{type:String , minlength:5 , maxlength:10000, required:function(){ return this.attachments?.length === 0 }  } ,
+    attachments:[{type:String }],
+    assetFolderId :{type:String },
+    createdBy:[{type : mongoose.Schema.Types.ObjectId , ref:"User" , required:true}],
 
+    tags:[{type : mongoose.Schema.Types.ObjectId , ref:"User"}],
+    likes:[{type : mongoose.Schema.Types.ObjectId , ref:"User"}]   ,
+
+    allowComment:{type:String , enum:AllowCommentEnum , default:AllowCommentEnum.available},
+    availability:{type:String , enum:AvailabilityEnum, default:AvailabilityEnum.public },
+
+    deletedAt:{type:Date },
+    deletedBy:{type : mongoose.Schema.Types.ObjectId , ref:"User"},
+
+    restoreAt:{type:Date },
+    restoreBy:{type : mongoose.Schema.Types.ObjectId , ref:"User"}
+
+
+} ,{
+    timestamps:true , 
+    toJSON:{
+        virtuals:true
+    },
+    toObject:{
+        virtuals:true
+    }
+})
+
+
+const PostModel = mongoose.models.Post || mongoose.model<IPost>("Post" , postSchema);
+
+export default PostModel;

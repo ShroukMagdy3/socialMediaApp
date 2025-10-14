@@ -21,6 +21,13 @@ export class DbRepository<TDocument> {
   ): Promise<HydratedDocument<TDocument> | null> {
     return await this.model.findOne(filter);
   }
+    async find (
+      filter: RootFilterQuery<TDocument>,
+    projection?: ProjectionType<TDocument> , 
+    options?:QueryOptions<TDocument>
+  ):Promise<HydratedDocument<TDocument>[]>{
+    return await this.model.find(filter , projection , options);
+  }
 
   async updateOne(
     filter: RootFilterQuery<TDocument>,

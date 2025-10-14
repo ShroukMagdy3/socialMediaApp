@@ -30,6 +30,7 @@ export interface IUser {
   deletedBy:Types.ObjectId
   restoreBy:Types.ObjectId
   restoreAt:Date
+  friends?:Types.ObjectId
 }
 export enum genderType {
   male = "male",
@@ -83,6 +84,7 @@ const userSchema = new mongoose.Schema<IUser>(
     deletedAt:{type:Date },
     restoreBy:{type:mongoose.Schema.Types.ObjectId , ref:"User"},
     restoreAt:{type:Date },
+    friends:[{type:mongoose.Schema.Types.ObjectId , ref:"User"}]
   },
   {
     timestamps: true,
