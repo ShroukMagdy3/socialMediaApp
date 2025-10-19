@@ -10,10 +10,10 @@ export enum actionEnum {
 export const createPostSchema ={
     body:z.strictObject({
         content:z.string().min(5).max(10000).optional(),
-        attachments :z.array(z.any()).min(2).optional(),
+        attachments :z.array(generalRules.file).min(2).optional(),
         assetFolderId :z.string().optional(),
 
-        AllowComment:z.enum(AllowCommentEnum).default(AllowCommentEnum.available).optional(),
+        AllowComment:z.enum(AllowCommentEnum).default(AllowCommentEnum.allow).optional(),
         Availability:z.enum(AvailabilityEnum).default(AvailabilityEnum.public).optional(),
 
         // not allowed to duplicate mention
@@ -23,7 +23,7 @@ export const createPostSchema ={
             message:"duplicate tags"
         }).optional()
     }).superRefine((value , ctx) =>{
-        if(value.content && value.attachments?.length==0){
+        if(!value.content && value.attachments?.length==0){
             ctx.addIssue({
                 code:"custom",
                 path:["content"],
@@ -48,7 +48,7 @@ export const updateSchema ={
         attachments :z.array(z.any()).min(2).optional(),
         assetFolderId :z.string().optional(),
 
-        AllowComment:z.enum(AllowCommentEnum).default(AllowCommentEnum.available).optional(),
+        AllowComment:z.enum(AllowCommentEnum).default(AllowCommentEnum.allow).optional(),
         Availability:z.enum(AvailabilityEnum).default(AvailabilityEnum.public).optional(),
 
         // not allowed to duplicate mention

@@ -4,7 +4,7 @@ config({ path: resolve("./config/.env") });
 
 import { pipeline } from "stream";
 import { promisify } from "util";
-
+import morgan from 'morgan'
 const writePipeLine = promisify(pipeline);
 import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
@@ -37,6 +37,7 @@ const bootstrap = async() => {
   app.use(limiter);
   app.use("/api/user" ,userRouter);
   app.use("/api/post" ,postRouter);
+
 
 
 

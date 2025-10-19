@@ -1,4 +1,4 @@
-import { sendEmail } from './../service/sendEmail';
+import { sendEmail } from "./../service/sendEmail";
 import { storageEnum } from "./../middleware/multer.cloud";
 import { createReadStream } from "fs";
 import { v4 as uuidv4 } from "uuid";
@@ -51,7 +51,8 @@ export const uploadFile = async ({
     ContentType: file.mimetype,
   });
   await s3Client().send(command);
-  return command.input.Key!;
+  const result = await s3Client().send(command);
+  return `https://${Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${command.input.Key}`;
 };
 
 export const uploadLargeFile = async ({
@@ -128,14 +129,16 @@ export const uploadWithSignedUrl = async ({
   path: string;
   ContentType: string;
 }) => {
-  const Key = `${process.env.APPLICATION_NAME}/${path}/${uuidv4()}/${originalName}`;
+  const Key = `${
+    process.env.APPLICATION_NAME
+  }/${path}/${uuidv4()}/${originalName}`;
   const command = new PutObjectCommand({
     Bucket: process.env.BUCKET_NAME!,
     ContentType,
     Key: `${process.env.APPLICATION_NAME}/${path}/${uuidv4()}/${originalName}`,
   });
-  const url  = await getSignedUrl(s3Client(), command, { expiresIn: 60 * 60 }); // in min
-  return {url , Key} ;
+  const url = await getSignedUrl(s3Client(), command, { expiresIn: 60 * 60 }); // in min
+  return { url, Key };
 };
 
 export const getFile = async ({
@@ -143,89 +146,79 @@ export const getFile = async ({
   Key,
 }: {
   Bucket?: string;
-  Key: string ;
+  Key: string;
 }) => {
   const command = new GetObjectCommand({
     Bucket,
-    Key
-  })
+    Key,
+  });
   return await s3Client().send(command);
 };
 export const getPreSignedURL = async ({
   Bucket = process.env.BUCKET_NAME!,
   Key,
-  downloadName
+  downloadName,
 }: {
-  Bucket?: string
-  Key: string
-  downloadName?:string | undefined
+  Bucket?: string;
+  Key: string;
+  downloadName?: string | undefined;
 }) => {
   const command = new GetObjectCommand({
     Bucket,
     Key,
-     ...(downloadName
+    ...(downloadName
       ? {
           ResponseContentDisposition: `attachment; filename="${downloadName}"`,
         }
       : {
           ResponseContentDisposition: "inline",
         }),
-  })
-  const url = await getSignedUrl(s3Client() , command , {expiresIn:60});
+  });
+  const url = await getSignedUrl(s3Client(), command, { expiresIn: 60 });
   return url;
-
 };
-export const deleteFile = async({
+export const deleteFile = async ({
   Bucket = process.env.BUCKET_NAME!,
   Key,
-}:{
-  Bucket ?:string,
-  Key :string,
-} )=>{
-
+}: {
+  Bucket?: string;
+  Key: string;
+}) => {
   const command = new DeleteObjectCommand({
     Bucket,
-    Key
-  })
+    Key,
+  });
   await s3Client().send(command);
-
-}
-export const deleteFiles = async({
+};
+export const deleteFiles = async ({
   Bucket = process.env.BUCKET_NAME!,
   urls,
-  Quiet=false
-}:{
-  Bucket ?:string,
-  urls :string[],
-  Quiet?:boolean
-} )=>{
-
+  Quiet = false,
+}: {
+  Bucket?: string;
+  urls: string[];
+  Quiet?: boolean;
+}) => {
   const command = new DeleteObjectsCommand({
     Bucket,
-    Delete:{
-      Objects:urls.map( url =>({ Key: url})),
-       Quiet
+    Delete: {
+      Objects: urls.map((url) => ({ Key: url })),
+      Quiet,
     },
-   
-    
-  })
+  });
   return await s3Client().send(command);
+};
 
-}
-
-
-export const listFiles =async({
+export const listFiles = async ({
   Bucket = process.env.BUCKET_NAME!,
-  path 
-}:{
-  Bucket?:string,
-  path:string
-} )=>{
-
+  path,
+}: {
+  Bucket?: string;
+  path: string;
+}) => {
   const command = new ListObjectsV2Command({
     Bucket,
-    Prefix:`${process.env.APPLICATION_NAME}/${path}`
-  })
+    Prefix: `${process.env.APPLICATION_NAME}/${path}`,
+  });
   return await s3Client().send(command);
-
-}
+};

@@ -19,7 +19,7 @@ export const generalRules = {
   otp: z.string().regex(/^[0-9]{6}$/),
 
   file: z.object({
-    filename: z.string(),
+    fieldname:z.string(),
     originalname: z.string(),
     encoding: z.string(),
     mimetype: z.string(),

@@ -8,7 +8,7 @@ export enum AvailabilityEnum  {
 }
 export enum AllowCommentEnum  {
     deny ="deny",
-    available = "available",
+    allow = "allow",
 }
 export interface IPost {
 
@@ -37,11 +37,10 @@ export const postSchema = new mongoose.Schema<IPost>({
     attachments:[{type:String }],
     assetFolderId :{type:String },
     createdBy:[{type : mongoose.Schema.Types.ObjectId , ref:"User" , required:true}],
-
     tags:[{type : mongoose.Schema.Types.ObjectId , ref:"User"}],
     likes:[{type : mongoose.Schema.Types.ObjectId , ref:"User"}]   ,
 
-    allowComment:{type:String , enum:AllowCommentEnum , default:AllowCommentEnum.available},
+    allowComment:{type:String , enum:AllowCommentEnum , default:AllowCommentEnum.allow},
     availability:{type:String , enum:AvailabilityEnum, default:AvailabilityEnum.public },
 
     deletedAt:{type:Date },
@@ -58,8 +57,26 @@ export const postSchema = new mongoose.Schema<IPost>({
     },
     toObject:{
         virtuals:true
-    }
+    },
+    strictQuery:true
 })
+// paranoid => false (freeze or unfreeze)  
+postSchema.pre(["findOne" ,"find"] , function(next) {
+    const query = this.getQuery();    
+    const {paranoid ,...rest} = query
+    if(paranoid === false ){
+        this.setQuery({...rest})
+    }else{
+        this.setQuery({...rest , deletedBy:{$exists:false}} )
+    }
+    next()
+})
+postSchema.virtual("comments" ,{
+    ref:"Comment" ,
+    localField:"_id",
+    foreignField:"postId"
+})
+
 
 
 const PostModel = mongoose.models.Post || mongoose.model<IPost>("Post" , postSchema);

@@ -17,7 +17,7 @@ class PostService {
   createPost = async (req: Request, res: Response, next: NextFunction) => {
     if (
       req.body.tags.length &&
-      (await this._userModel.find({ _id: { $in: req.body.tags } })).length !==
+      (await this._userModel.find({filter:{ _id: { $in: req.body.tags }} })).length !==
         req.body.tags.length
     ) {
       throw new AppError("invalid Tags ID");
@@ -42,7 +42,7 @@ class PostService {
     if (!post) {
       await deleteFiles({ urls: attachments });
       throw new AppError("Failed to create Post!");
-    }
+    }    
     return res.status(201).json({ message: "Created", post });
   };
 
@@ -110,20 +110,48 @@ class PostService {
         files: req.files as unknown as Express.Multer.File[],
       });
     }
-
     if (req?.body?.tags?.length) {
       if (
         req?.body?.tags?.length &&
-        (await this._userModel.find({ _id: { $in: req.body.tags } })).length !== req.body.tags.length
+        (await this._userModel.find({filter:{ _id: { $in: req.body.tags } }})).length !== req.body.tags.length
       ) {
         throw new AppError("invalid Tags ID");
       }
       req.body.tags= post.tags;
     }
     await post.save();
-
     return res.status(200).json({message:"Updated" , post})
   };
+   getAllPost = async (req: Request, res: Response, next: NextFunction) => {
+      let { page = 1, limit = 5 } = req.query as unknown as {
+        page: number;
+        limit: number;
+      };
+  
+      if (page <= 0) page = 1;
+      page = page * 1 || 1;
+      const skip = (page - 1) * limit;
+      const { docs, currentPage, numberOfDocument, numberOfPages } =
+        await this._postModel.paginate({ filter: {}, query: { page, limit } });
+        const posts = await this._postModel.find({
+           filter:{}  ,
+           options: { 
+             populate:[
+              {path : "comments" } 
+            ] }
+          })
+      return res
+        .status(201)
+        .json({
+          message: "Created",
+          page: currentPage,
+          numberOfPages,
+          numberOfDocument,
+          posts: posts,
+        });
+    };
+  
+
 
 
 }

@@ -17,18 +17,50 @@ export class DbRepository<TDocument> {
 
   async findOne(
     filter: RootFilterQuery<TDocument>,
-    select?: ProjectionType<TDocument>
+    select?: ProjectionType<TDocument>,
+     options?: QueryOptions<TDocument>
   ): Promise<HydratedDocument<TDocument> | null> {
-    return await this.model.findOne(filter);
+   return await this.model.findOne(filter , select, options);
+     
   }
-    async find (
-      filter: RootFilterQuery<TDocument>,
+    async find ({
+      filter,
+      projection ,
+      options
+    }:
+   {   filter: RootFilterQuery<TDocument>,
     projection?: ProjectionType<TDocument> , 
-    options?:QueryOptions<TDocument>
+    options?:QueryOptions<TDocument>}
   ):Promise<HydratedDocument<TDocument>[]>{
     return await this.model.find(filter , projection , options);
   }
+  async paginate({
+  filter,
+  projection,
+  options,
+  query
+}: {
+  filter: RootFilterQuery<TDocument>;
+  projection?: ProjectionType<TDocument>;
+  options?: QueryOptions<TDocument>;
+  query: { page: number; limit: number };
+}) {
 
+  let { page, limit } = query;
+  if (page <= 0) page = 1;
+  page = page * 1 || 1;
+  const skip = (page - 1) * limit;
+
+  const finalOptions = {
+    ...options,
+    skip,
+    limit
+  };
+  const numberOfDocument = await this.model.countDocuments({deletedAt:{$exists:false}});
+  const numberOfPages =Math.ceil( numberOfDocument /limit );
+  const docs =  await this.model.find(filter, projection, finalOptions);
+  return{docs , currentPage:page , numberOfDocument , numberOfPages}
+}
   async updateOne(
     filter: RootFilterQuery<TDocument>,
     update: UpdateQuery<TDocument>,
