@@ -10,7 +10,6 @@ const userRouter = Router()
 
 userRouter.post("/signUp", validation(signUpSchema) , US.signUp )
 userRouter.patch("/confirmEmail", validation(confirmEmailSchema) , US.confirmEmail )
-
 userRouter.post("/signIn" ,validation(signInSchema) , US.signIn )
 userRouter.get("/getProfile",Authentication(), US.getProfile )
 userRouter.post("/logOut", validation(LogOutSchema) ,Authentication(), US.LogOut )
@@ -21,6 +20,8 @@ userRouter.patch("/resetPass" ,validation(resetPassSchema), US.resetPass )
 userRouter.patch("/updatePass",Authentication() , validation(updatePasswordSchema), US.updatePass )
 userRouter.put("/updateInfo",Authentication() , validation(updateInfoSchema), US.updateInfo )
 userRouter.patch("/updateEmail",Authentication() , validation(updateEmailSchema), US.updateEmail )
+userRouter.get("/dasBoard",Authentication() , Authorization({role:[roleType.admin , roleType.superAdmin]}) , US.dashBoard )
+userRouter.patch("/updateRole/:userId",Authentication() , Authorization({role:[roleType.admin , roleType.superAdmin]}) , US.updateRole )
 
 
 
@@ -30,9 +31,10 @@ userRouter.post("/confirmEnable2FA" ,Authentication() ,validation(confirmEnable2
 userRouter.post("/confirmLogin" ,validation(confirmLoginSchema), US.confirmLogin);
 
 
+
 userRouter.post("/upload" ,Authentication() , US.uploadProfileImage);
 userRouter.delete("/freezeAccount{/:userId}", Authentication() , validation(freezeSchema) , US.freezeAccount )
-userRouter.delete("/unFreezeAccount/:userId", Authentication() , Authorization(roleType.admin) , validation(unfreezeSchema) , US.unfreezeAccount )
+userRouter.delete("/unFreezeAccount/:userId", Authentication() , Authorization({role:[roleType.admin , roleType.superAdmin]}) , validation(unfreezeSchema) , US.unfreezeAccount )
 
 
 

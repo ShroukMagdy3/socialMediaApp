@@ -41,6 +41,7 @@ export enum genderType {
 export enum roleType {
   user = "user",
   admin = "admin",
+  superAdmin = "superAdmin",
 }
 export enum providerType{
   system= "system", 

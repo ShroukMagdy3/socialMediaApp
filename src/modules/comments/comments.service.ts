@@ -21,82 +21,93 @@ class CommentService {
   private _commentModel = new CommentRepository(CommentModel);
   constructor() {}
 
- createComment = async (req: Request, res: Response, next: NextFunction) => {
-  const { postId, commentId } = req.params;
-  let { content, attachments = [], tags = [], onModel } = req.body;
+  createComment = async (req: Request, res: Response, next: NextFunction) => {
+    const { postId, commentId } = req.params;
+    let { content, attachments = [], tags = [], onModel } = req.body;
 
-  let doc: HydratedDocument<IPost | IComment> | null = null;
+    let doc: HydratedDocument<IPost | IComment> | null = null;
 
-  if (commentId && onModel === OnModelEnum.Comment) {
-    const comment = await this._commentModel.findOne({
-      _id: commentId,
-      refId:postId, 
-    });
+    if (onModel === OnModelEnum.Comment) {
+      if (!commentId) {
+        throw new AppError("commentId is required", 404);
+      }
+      const comment = await this._commentModel.findOne({
+        _id: commentId,
+        refId: postId,
+        allowComment: AllowCommentEnum.allow,
+        $or: [
+          { availability: AvailabilityEnum.public },
+          { createdBy: req.user._id },
+          {
+            $and: [
+              { availability: AvailabilityEnum.friends },
+              { createdBy: { $in: req.user.friends } },
+            ],
+          },
+        ],
+      });
+      if (!comment) {
+        throw new AppError("This comment not found or unauthorized");
+      }
+      doc = comment;
+    } else if (onModel === OnModelEnum.Post) {
+      if (commentId) {
+        throw new AppError("commentId not allowed");
+      }
+      const post = await this._postModel.findOne({
+        _id: postId,
+        allowComment: AllowCommentEnum.allow,
+        $or: [
+          { availability: AvailabilityEnum.public },
+          { createdBy: req.user._id },
+          {
+            $and: [
+              { availability: AvailabilityEnum.friends },
+              { createdBy: { $in: req.user.friends } },
+            ],
+          },
+        ],
+      });
 
-    if (!comment) {
-      throw new AppError("This comment not found or unauthorized");
+      if (!post) {
+        throw new AppError("This post not found or unauthorized");
+      }
+
+      doc = post;
     }
-
-    doc = comment;
-  }
-
-  else if (onModel === OnModelEnum.Post) {
-    const post = await this._postModel.findOne({
-      _id: new Types.ObjectId(postId),
-      allowComment: AllowCommentEnum.allow,
-      $or: [
-        { availability: AvailabilityEnum.public },
-        {
-          $and: [
-            { availability: AvailabilityEnum.friends },
-            { createdBy: { $in: req.user.friends } },
-          ],
-        },
-      ],
-    });
-
-    if (!post) {
-      throw new AppError("This post not found or unauthorized");
-    }
-
-    doc = post;
-  }
-  if (
+    if (
       req.body?.tags?.length &&
-      (await this._userModel.find({filter:{ _id: { $in: req.body.tags }} })).length !==
-        req.body.tags.length
+      (await this._userModel.find({ filter: { _id: { $in: req.body.tags } } }))
+        .length !== req.body.tags.length
     ) {
       throw new AppError("invalid Tags ID");
     }
-  const assetFolderId = uuidv4();
-  if (req.files && (req.files as Express.Multer.File[]).length > 0) {
-    attachments = await uploadFiles({
-      path: `users/${req.user._id}/posts/${doc?.assetFolderId}/comments/${assetFolderId}`,
-      files: req.files as unknown as Express.Multer.File[],
+    const assetFolderId = uuidv4();
+    if (req.files && (req.files as Express.Multer.File[]).length > 0) {
+      attachments = await uploadFiles({
+        path: `users/${req.user._id}/posts/${doc?.assetFolderId}/comments/${assetFolderId}`,
+        files: req.files as unknown as Express.Multer.File[],
+      });
+    }
+
+    const comment = await this._commentModel.create({
+      content,
+      tags,
+      attachments,
+      assetFolderId,
+      refId: doc?._id as Types.ObjectId,
+      onModel,
+      createdBy: req.user._id,
     });
-    
-  }
 
-  const comment = await this._commentModel.create({
-    content,
-    tags,
-    attachments,
-    assetFolderId,
-    refId: doc?._id as Types.ObjectId,
-    onModel,
-    createdBy: req.user._id,
-  });
+    if (!comment) {
+      await deleteFiles({ urls: attachments });
+      throw new AppError("Failed to create comment");
+    }
+    console.log(comment);
 
-  if (!comment) {
-    await deleteFiles({ urls: attachments });
-    throw new AppError("Failed to create comment");
-  }
-  console.log(comment);
-  
-
-  return res.status(201).json({ message: "Created", comment });
-};
-
+    return res.status(201).json({ message: "Created", comment });
+  };
 }
 
 export default new CommentService();

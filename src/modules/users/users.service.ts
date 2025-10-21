@@ -27,10 +27,13 @@ import { revokeTokenRepository } from "../../DB/Repositories/revokeToken.reposit
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { Compare, Hash } from "../../utilities/hash";
 import { uploadWithSignedUrl } from "../../utilities/s3.config";
+import { PostRepository } from "../../DB/Repositories/posts.repository";
+import PostModel from "../../DB/models/post.model";
 
 class UserService {
   private _userModel = new UserRepository(userModel);
   private _revokeTokenModel = new revokeTokenRepository(revokeTokenModel);
+  private _postModel = new PostRepository(PostModel);
 
   signUp = async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -476,6 +479,33 @@ class UserService {
     }
     return res.status(200).json({ message: "UnFreezed" });
   };
+   dashBoard = async (req: Request, res: Response, next: NextFunction) => {
+    const result = await Promise.allSettled([
+      this._userModel.find({filter:{}}),
+      this._postModel.find({filter:{}})
+    ])
+
+    return res.status(200).json({ message: "success" , result });
+  };
+  updateRole = async (req:Request , res:Response , next:NextFunction) =>{
+    const {role :newRole } = req.body
+    const {userId} = req.params ;
+    // no one can update superAdmin
+    // no one can update the same level
+    const denyRoles =[newRole , roleType.superAdmin];
+    if(req.user.role == roleType.admin){
+      denyRoles.push(roleType.admin);
+      if(newRole === roleType.superAdmin){
+        throw new AppError("unauthorized", 401);
+      }
+    }
+    const user = await this._userModel.findOneAndUpdate({_id:req.user._id , role:{ $nin:denyRoles} } ,{role:newRole} ,{new:true}
+    )
+    if(!user) {
+      throw new AppError("unauthorized" , 401);
+    }
+    return res.status(200).json({ message:"success" , user })
+  }
 
   
 
